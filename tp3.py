@@ -17,6 +17,7 @@ def readSequences(filename):
                     nom = line.strip(">")
             else:
                 content += line
+        file.append(Sequence(nom, content, ""))
     return file
 
 class Sequence:
@@ -55,18 +56,20 @@ def removeGaps(seqList):
 
 def calculateDistanceMatrix(blosumMatrix,seqList):
     distanceMatrix = makeDistanceMatrix(seqList)
-    print(distanceMatrix)
+    #print(distanceMatrix)
+    #Parcourt les séquences en pairage 2 à 2
     for i in range(len(seqList)):
         for j in range (i+1,len(seqList)):
             p = 0
             qi = 0
             qj = 0
             if i!=j:
+                #Pour chacune des 2 séquences, regarde les caractères 1 à 1
                 for k in range(len(seqList[i].getNewContent())):
                     p += getDistanceP(blosumMatrix,seqList[i].getNewContent()[k],seqList[j].getNewContent()[k])
                     qi+= getDistanceQ(blosumMatrix,seqList[i].getNewContent()[k])
-                    qj += getDistanceQ(blosumMatrix, seqList[j].getNewContent()[k])
-            distanceMatrix[i+1][j]=getBlosumScore(p,qi,qj)
+                    qj+= getDistanceQ(blosumMatrix, seqList[j].getNewContent()[k])
+            distanceMatrix[i+1][j+1]=round(getBlosumScore(p,qi,qj),2)
     return distanceMatrix
 
 def makeDistanceMatrix(seqList):
@@ -112,17 +115,20 @@ def makeBlosumMatrix():
             break
         rowScore = []
         for column in range(columns):
-            temp = listBlosum[row][column]
-            if temp != " ":
-                if temp != "-":
-                    if not minus:
-                        rowScore.append(temp)
+            if row == 18 and column==53:
+                rowScore.append(11)
+            else:
+                temp = listBlosum[row][column]
+                if temp != " ":
+                    if temp != "-":
+                        if not minus:
+                            rowScore.append(temp)
+                        else:
+                            minus = False
+                            temp = "-" + temp
+                            rowScore.append(temp)
                     else:
-                        minus = False
-                        temp = "-" + temp
-                        rowScore.append(temp)
-                else:
-                    minus = True
+                        minus = True
         blosumMatrix.append(rowScore)
 
     return blosumMatrix
@@ -162,11 +168,13 @@ def printMatrix(matrix):
 
 def main():
     seqList = readSequences("proteines.fa")
+
     seqList = removeGaps(seqList)
-    printSequences(seqList)
+    #print (len(seqList[0].getNewContent()))
+    #printSequences(seqList)
 
     blosumMatrix = makeBlosumMatrix()
-    printMatrix(blosumMatrix)
+    #printMatrix(blosumMatrix)
 
     distanceMatrix = calculateDistanceMatrix(blosumMatrix,seqList)
     printMatrix(distanceMatrix)
