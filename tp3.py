@@ -56,6 +56,8 @@ def robinsonFould(tree1, tree2):
         for elem in leftElementsArray2:
             leftElement2 = leftElement2 + elem.get_leaves()
 
+        # Les bipartitions pour la seq0 ne marchent pas (voir debugger ici)
+        # De plus, on ne doit pas prendre en compte les bipartitions triviales
         bipartition1 = Bipartition(rightElement1, leftElement1)
         bipartition2 = Bipartition(rightElement2, leftElement2)
         distance += bipartition1.compare(bipartition2)
@@ -148,39 +150,36 @@ def removeGaps(seqList):
                 seqList[l].setNewContent(seqList[l].getOldContent()[i])
     return seqList
 
-def updateNJTree(i,j,n,distanceMatrix,seqList):
+def updateNJTree(t,i,j,n,distanceMatrix,seqList):
     # Create new node to join
     sumOne, sumTwo = findSums(i,j,n,distanceMatrix)
+    # TODO:Create new tree here
     distIToNewNode = 0.5*(float(distanceMatrix[i][j]))+((1/(2*(n-2)))*(sumOne-sumTwo))
     distJToNewNode = float(distanceMatrix[i][j]) - distIToNewNode
+    u = t.add_child(name=distanceMatrix[i][0] + "-" + distanceMatrix[0][j])
+    m1 = u.add_child(name=distanceMatrix[i][0],dist=distIToNewNode)
+    m2 = u.add_child(name=distanceMatrix[0][j],dist=distJToNewNode)
 
     stringList=[]
-    #stringList.append(distanceMatrix[i][0] + "-" + distanceMatrix[0][j])
     for s in seqList:
         if s.getName()!= distanceMatrix[i][0] and s.getName() != distanceMatrix[0][j]:
             stringList.append(s.getName())
         elif s.getName() == distanceMatrix[i][0]:
             stringList.append(distanceMatrix[i][0] + "-" + distanceMatrix[0][j])
+
     n=len(seqList)-1
     newDistanceMatrix = makeNewDistanceMatrix(n,stringList,distanceMatrix,i)
-    print("NEW DISTANCE WITH 0 WHERE NEW COLUMN")
-    printMatrix(newDistanceMatrix)
 
-    for k in range(i,n):
-        for l in range(j,n):
-            if k != l:
-                newDistanceMatrix[k][l]=0.5*(float(distanceMatrix[i][l])+float(distanceMatrix[j][l])-float(distanceMatrix[i][j]))
-    print("")
-    print("NEW DISTANCE WITH ALL VALUES")
-    printMatrix(newDistanceMatrix)
+    for k in range(1,n+1):
+        #On remplit la nouvelle ligne
+        if i==k:
+            newDistanceMatrix[i][k] = 0
+        else:
+            #TODO: Check si ok avec a qui change pas..doit durement rajouter un if
+            newDistanceMatrix[i][k] = 0.5 * (float(distanceMatrix[i][k+1]) + float(distanceMatrix[j][k+1]) - float(distanceMatrix[i][j]))
+            newDistanceMatrix[k][i] = newDistanceMatrix[i][k]
 
-def testNumpy(distanceMatrix,i):
-    numArray = numpy.array(distanceMatrix)
-    numArray = numpy.delete(numArray,i,0)
-    numArray = numpy.delete(numArray, i, 1)
-    numArray = numpy.delete(numArray,i,0)
-    numArray = numpy.delete(numArray, i, 1)
-    print(numArray)
+    return (stringList,newDistanceMatrix)
 
 def makeNewDistanceMatrix(n, seqStringList, distanceMatrix,i):
     newMatrix = []
@@ -196,7 +195,16 @@ def makeNewDistanceMatrix(n, seqStringList, distanceMatrix,i):
             elif column == 0:
                 rowScore.append(seqStringList[row - 1])
             elif row !=i and column!= i:
-                rowScore.append(distanceMatrix[row][column])
+                if row<i and column<i:
+                    # On ne touche pas à l'indice
+                    rowScore.append(distanceMatrix[row][column])
+                else:
+                    if row<i:
+                        rowScore.append(distanceMatrix[row][column + 1])
+                    elif column <i:
+                        rowScore.append(distanceMatrix[row+1][column])
+                    else:# On réduit l'indice de 1
+                        rowScore.append(distanceMatrix[row+1][column+1])
             else:
                 rowScore.append(0)
         newMatrix.append(rowScore)
@@ -349,51 +357,119 @@ def printMatrix(matrix):
     for col in matrix:
         print (col)
 
+def rootTree(t):
+    print("unrooted tree ", t)
+    print("")
+    r = t.get_midpoint_outgroup()
+    print("mid point technic = " , r)
+
+    max = 0
+    longNode = None
+    #Get farthest node from every node
+    for node in t.traverse():
+        farthest, dist = node.get_farthest_node()
+        print ("The farthest node from ", node.name, "is ", farthest.name, "with dist = ", dist)
+        if dist>max:
+            max = dist
+            longNode = node
+    print ("The farthest node ever is ", longNode.name, "with dist = ", max)
+
 def main():
+    # Creates a list of Sequence object with the name and content
     seqList = readSequences("proteines.fa")
 
+    # Updates the newContent property with the oldContent without gap
     seqList = removeGaps(seqList)
-    # print (len(seqList[0].getNewContent()))
-    # printSequences(seqList)
-
+    print("New sequences")
+    printSequences(seqList)
+    print(" =========================================")
+    # Parses the BLOSUM62 matrix
     blosumMatrix = makeBlosumMatrix()
-    # printMatrix(blosumMatrix)
 
+    # Calculates the first distance matrix using blosum62 score
     distanceMatrix = calculateDistanceMatrix(blosumMatrix, seqList)
+    print("Matrice initiale des distances")
     printMatrix(distanceMatrix)
 
-    njMatrix, posSmallest = calculateNJMatrix(seqList,distanceMatrix)
     print(" =========================================")
+
+    print("Matrice pondérée")
+    njMatrix, posSmallest = calculateNJMatrix(seqList,distanceMatrix)
+
     printMatrix(njMatrix)
     print("Smallest is: ",posSmallest[0],posSmallest[1])
 
-    # Test
-    print(" ===================TESTING======================")
-    testList = [['~','a','b','c','d','e'],['a','0','5','9','9','8'],['b','5','0','10','10','9'],['c','9','10','0','8','7'],['d','9','10','8','0','3'],['e','8','9','7','3','0']]
-    #testNumpy(testList,2)
-    print("DISTANCE INITIALE")
-    printMatrix(testList)
-    a = Sequence('a',"","")
-    b = Sequence('b', "", "")
-    c = Sequence('c', "", "")
-    d = Sequence('d', "", "")
-    e = Sequence('e', "", "")
-    seqList = [a,b,c,d,e]
-    njMatrix, posSmallest = calculateNJMatrix(seqList, testList)
-    print("")
-    print("DISTANCE MODIFIEE")
-    printMatrix(njMatrix)
+    t = Tree()
+    # Cette fonction merge 2 séquences en une nouvelle, modifie la liste des sequences et rajoute le noeud dans l'arbre
+    newSeqList, newMatrix = updateNJTree(t, posSmallest[0], posSmallest[1], len(seqList), distanceMatrix, seqList)
+    print(" =========================================")
+    print(" =========================================")
+    print("Matrice des distances après 1 itération")
+    printMatrix(newMatrix)
 
-    print("Smallest is: ",posSmallest[0],posSmallest[1])
-    print("")
-    updateNJTree(posSmallest[0],posSmallest[1],len(seqList),testList,seqList)
+    count = 0
+    #TODO: Compter avec le len et les colonnes et non un 2 random
+    # Le but ici est de looper et de modifier la matrice jusqu'à ce que seulement 2 noeuds restent dans la liste des sequences
+    # Dans ce cas-là, on les merge dans une racine vide (car NJ retourne un non-enraciné)
+    while count < 2:
+        count +=1
+        temp = []
+        # newSeqList est une liste de String, on doit donc créer les objets correspondants
+        for s in newSeqList:
+            temp.append(Sequence(s, "", ""))
+
+        #On recalcule la matrice NJ à partir de la nouvelle matrice des distances
+        njMatrix, posSmallest = calculateNJMatrix(temp, newMatrix)
+        print(" =========================================")
+
+        print("Matrice pondérée")
+        printMatrix(njMatrix)
+        print("Smallest is: ", posSmallest[0], posSmallest[1])
+        print("")
+        # Idem à plus haut
+        newSeqList, newMatrix = updateNJTree(t, posSmallest[0], posSmallest[1], len(newSeqList), newMatrix, temp)
+        print(" =========================================")
+        print(" =========================================")
+        print("Matrice des distances après "+ str(count+1) +" itérations")
+        printMatrix(newMatrix)
+
+
     treesFromFile = readTrees("arbres.nw")
 
-    testScore = robinsonFould(treesFromFile[0], treesFromFile[0])
-    print (testScore)
+    #testScore = robinsonFould(treesFromFile[0], treesFromFile[0])
+    #print (testScore)
+    rf= treesFromFile[0].robinson_foulds(treesFromFile[1])
+    print("rf",rf[0])
     testScore = robinsonFould(treesFromFile[0], treesFromFile[1])
     print (testScore)
 
+    #TESTING ROOTING
+    t1 = treesFromFile[0]
+    t1.unroot()
+    rootTree(t1)
 
 if __name__ == "__main__":
     main()
+
+    """
+        # Test
+        print(" ===================TESTING======================")
+        testDistanceMatrix = [['~','a','b','c','d','e'],['a',0,5,9,9,8],['b',5,0,10,10,9],['c',9,10,0,8,7],['d',9,10,8,0,3],['e',8,9,7,3,0]]
+        #testNumpy(testList,2)
+        print("DISTANCE INITIALE")
+        printMatrix(testDistanceMatrix)
+        a = Sequence('a',"","")
+        b = Sequence('b', "", "")
+        c = Sequence('c', "", "")
+        d = Sequence('d', "", "")
+        e = Sequence('e', "", "")
+        seqList = [a,b,c,d,e]
+        njMatrix, posSmallest = calculateNJMatrix(seqList, testDistanceMatrix)
+        print("")
+        #print("DISTANCE MODIFIEE")
+        #printMatrix(njMatrix)
+
+        print("Smallest is: ",posSmallest[0],posSmallest[1])
+        print("")
+
+    """
