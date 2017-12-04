@@ -1,3 +1,4 @@
+# coding=utf-8
 from ete3 import Tree
 import numpy
 
@@ -150,7 +151,7 @@ def removeGaps(seqList):
                 seqList[l].setNewContent(seqList[l].getOldContent()[i])
     return seqList
 
-def updateNJTree(t,i,j,n,distanceMatrix,seqList):
+def updateNJTree(i,j,n,distanceMatrix,seqList):
     # Calculate summations in advance
     sumOne, sumTwo = findSums(i,j,n,distanceMatrix)
 
@@ -164,16 +165,26 @@ def updateNJTree(t,i,j,n,distanceMatrix,seqList):
 
     #ARBRE
     # TODO: Add conditions of tree creation
-    u = t.add_child(name=distanceMatrix[i][0] + "-" + distanceMatrix[0][j])
-    m1 = u.add_child(name=distanceMatrix[i][0],dist=distIToNewNode)
-    m2 = u.add_child(name=distanceMatrix[0][j],dist=distJToNewNode)
+    # Je pense que c'est préférable de pas merge des arbres,
+    # la structure est un peu plus tricky qu'elle en a l'air
+    # J'ai préféré modifier stringList pour keep track des accouplements
+    # de noeuds et ensuite faire un strig qui va servir à l'instanciation d'un arbre.
+    # J'ai verifier avec ton tableau et ca donne la meme chose, mais ta valeur attendue match pas avec le tableau
+    # donc je sais pas trop si c'est la fonction qui est a changer ou le résultat sur papier.
+
+    # u = t.add_child(name=distanceMatrix[i][0] + "-" + distanceMatrix[0][j])
+    # m1 = u.add_child(name=distanceMatrix[i][0],dist=distIToNewNode)
+    # m2 = u.add_child(name=distanceMatrix[0][j],dist=distJToNewNode)
 
     stringList=[]
+    njTreeStringArray = []
     for s in seqList:
-        if s.getName()!= distanceMatrix[i][0] and s.getName() != distanceMatrix[0][j]:
+        if s.getName() != distanceMatrix[i][0] and s.getName() != distanceMatrix[0][j]:
             stringList.append(s.getName())
+            njTreeStringArray.append(s.getName())
         elif s.getName() == distanceMatrix[i][0]:
             stringList.append(distanceMatrix[i][0] + "-" + distanceMatrix[0][j])
+            njTreeStringArray.append("("+distanceMatrix[i][0] + "," + distanceMatrix[0][j]+")")
 
     n=len(seqList)-1
     newDistanceMatrix = makeNewDistanceMatrix(n,stringList,distanceMatrix,i,j)
@@ -189,7 +200,7 @@ def updateNJTree(t,i,j,n,distanceMatrix,seqList):
                 newDistanceMatrix[i][k] = 0.5 * (float(distanceMatrix[i][k]) + float(distanceMatrix[j][k]) - float(distanceMatrix[i][j]))
             newDistanceMatrix[k][i] = newDistanceMatrix[i][k]
 
-    return (stringList,newDistanceMatrix)
+    return (stringList,newDistanceMatrix, njTreeStringArray)
 
 def makeNewDistanceMatrix(n, seqStringList, distanceMatrix,i,j):
     newMatrix = []
@@ -412,9 +423,8 @@ def main():
     printMatrix(njMatrix)
     print("Smallest is: ",posSmallest[0],posSmallest[1])
 
-    t = Tree()
     # Cette fonction merge 2 séquences en une nouvelle, modifie la liste des sequences et rajoute le noeud dans l'arbre
-    newSeqList, newMatrix = updateNJTree(t, posSmallest[0], posSmallest[1], len(seqList), distanceMatrix, seqList)
+    newSeqList, newMatrix, njTreeStringArray = updateNJTree(posSmallest[0], posSmallest[1], len(seqList), distanceMatrix, seqList)
     print(" =========================================")
     print(" =========================================")
     print("Matrice des distances après 1 itération")
@@ -437,20 +447,38 @@ def main():
         print("Smallest is: ", posSmallest[0], posSmallest[1])
         print("")
         # Idem à plus haut
-        newSeqList, newMatrix = updateNJTree(t, posSmallest[0], posSmallest[1], len(newSeqList), newMatrix, temp)
+        newSeqList, newMatrix, njTreeStringArray = updateNJTree(posSmallest[0], posSmallest[1], len(newSeqList), newMatrix, temp)
         print(" =========================================")
         print(" =========================================")
         print("Matrice des distances après itérations")
         printMatrix(newMatrix)
 
     #resultat NJ : (((PCDHA1_Humain, PCDHA1_Bonobo), OR2J3_Humain), (PCDHA1_Rat, PCDHA1_Souris));
+    # TODO: VERIFIER L'AGORITHME DE updateNJTree PARCE QUE CA DONNE PAS LA MEME CHOSE QUE CE A QUOI TU T'ATTENDS
+    # A moins que j'aie juste fuckall compris de comment ca marche
+    # D'après ce que j'ai lu et vu dans des videos, quand tu join des colones/lignes tu
+    # dis que c'est des siblings, je me trompe? J'ai pris ca de cette video
+    # https://www.youtube.com/watch?v=Y0QWFFWQzds
+    # J'ai essayé de comprendre ce que tu faisais dans la fonction mais j'ai de la difficulté à suivre le code
+
+    # Il va falloir garder que z (en fait t, mais avec l'instanciation de z)
     t = Tree("(((PCDHA1_Humain, PCDHA1_Bonobo), OR2J3_Humain), (PCDHA1_Rat, PCDHA1_Souris));")
+    njTreeString = "(" + njTreeStringArray[0] + "," + njTreeStringArray[1] + ");"
+    z = Tree(njTreeString)
+    print ("+++++++++++++++++++COMPARAISON+++++++++++++++++")
+    print "(((PCDHA1_Humain, PCDHA1_Bonobo), OR2J3_Humain), (PCDHA1_Rat, PCDHA1_Souris));"
+    print njTreeString
+    print ("Arbre attendu")
     print(t)
+    print ("Arbre obtenu")
+    print z
 
     treesFromFile = readTrees("arbres.nw")
 
     #testScore = robinsonFould(treesFromFile[0], treesFromFile[0])
     #print (testScore)
+    # TODO: le rf de la librairie est bon ou non? ca match pas avec le rapport
+    # La méthode de la librairie donne pas la meme valeur que toi dans ton tableau, c'est un peu weird
     rf= treesFromFile[0].robinson_foulds(treesFromFile[1])
     print("rf",rf[0])
     testScore = robinsonFould(treesFromFile[0], treesFromFile[1])
