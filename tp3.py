@@ -151,11 +151,19 @@ def removeGaps(seqList):
     return seqList
 
 def updateNJTree(t,i,j,n,distanceMatrix,seqList):
-    # Create new node to join
+    # Calculate summations in advance
     sumOne, sumTwo = findSums(i,j,n,distanceMatrix)
-    # TODO:Create new tree here
+
+    #BRANCHES
+    # Distance to the first branch
     distIToNewNode = 0.5*(float(distanceMatrix[i][j]))+((1/(2*(n-2)))*(sumOne-sumTwo))
+    # Distance to the second branch
     distJToNewNode = float(distanceMatrix[i][j]) - distIToNewNode
+    print("distance between: ",distIToNewNode)
+    print("distance between: ",distJToNewNode)
+
+    #ARBRE
+    # TODO: Add conditions of tree creation
     u = t.add_child(name=distanceMatrix[i][0] + "-" + distanceMatrix[0][j])
     m1 = u.add_child(name=distanceMatrix[i][0],dist=distIToNewNode)
     m2 = u.add_child(name=distanceMatrix[0][j],dist=distJToNewNode)
@@ -168,20 +176,22 @@ def updateNJTree(t,i,j,n,distanceMatrix,seqList):
             stringList.append(distanceMatrix[i][0] + "-" + distanceMatrix[0][j])
 
     n=len(seqList)-1
-    newDistanceMatrix = makeNewDistanceMatrix(n,stringList,distanceMatrix,i)
+    newDistanceMatrix = makeNewDistanceMatrix(n,stringList,distanceMatrix,i,j)
 
     for k in range(1,n+1):
         #On remplit la nouvelle ligne
         if i==k:
             newDistanceMatrix[i][k] = 0
         else:
-            #TODO: Check si ok avec a qui change pas..doit durement rajouter un if
-            newDistanceMatrix[i][k] = 0.5 * (float(distanceMatrix[i][k+1]) + float(distanceMatrix[j][k+1]) - float(distanceMatrix[i][j]))
+            if k >= j:
+                newDistanceMatrix[i][k] = 0.5 * (float(distanceMatrix[i][k+1]) + float(distanceMatrix[j][k+1]) - float(distanceMatrix[i][j]))
+            else:
+                newDistanceMatrix[i][k] = 0.5 * (float(distanceMatrix[i][k]) + float(distanceMatrix[j][k]) - float(distanceMatrix[i][j]))
             newDistanceMatrix[k][i] = newDistanceMatrix[i][k]
 
     return (stringList,newDistanceMatrix)
 
-def makeNewDistanceMatrix(n, seqStringList, distanceMatrix,i):
+def makeNewDistanceMatrix(n, seqStringList, distanceMatrix,i,j):
     newMatrix = []
     rows = n
     columns = rows
@@ -194,7 +204,7 @@ def makeNewDistanceMatrix(n, seqStringList, distanceMatrix,i):
                 rowScore.append(seqStringList[column - 1])
             elif column == 0:
                 rowScore.append(seqStringList[row - 1])
-            elif row !=i and column!= i:
+            elif row !=i and column!= i and row!= column:
                 if row<i and column<i:
                     # On ne touche pas à l'indice
                     rowScore.append(distanceMatrix[row][column])
@@ -204,7 +214,10 @@ def makeNewDistanceMatrix(n, seqStringList, distanceMatrix,i):
                     elif column <i:
                         rowScore.append(distanceMatrix[row+1][column])
                     else:# On réduit l'indice de 1
-                        rowScore.append(distanceMatrix[row+1][column+1])
+                        if j!= i+1:
+                            rowScore.append(distanceMatrix[row][column])
+                        else:
+                            rowScore.append(distanceMatrix[row+1][column+1])
             else:
                 rowScore.append(0)
         newMatrix.append(rowScore)
@@ -407,12 +420,9 @@ def main():
     print("Matrice des distances après 1 itération")
     printMatrix(newMatrix)
 
-    count = 0
-    #TODO: Compter avec le len et les colonnes et non un 2 random
     # Le but ici est de looper et de modifier la matrice jusqu'à ce que seulement 2 noeuds restent dans la liste des sequences
     # Dans ce cas-là, on les merge dans une racine vide (car NJ retourne un non-enraciné)
-    while count < 2:
-        count +=1
+    while len(newSeqList)>2:
         temp = []
         # newSeqList est une liste de String, on doit donc créer les objets correspondants
         for s in newSeqList:
@@ -430,9 +440,12 @@ def main():
         newSeqList, newMatrix = updateNJTree(t, posSmallest[0], posSmallest[1], len(newSeqList), newMatrix, temp)
         print(" =========================================")
         print(" =========================================")
-        print("Matrice des distances après "+ str(count+1) +" itérations")
+        print("Matrice des distances après itérations")
         printMatrix(newMatrix)
 
+    #resultat NJ : (((PCDHA1_Humain, PCDHA1_Bonobo), OR2J3_Humain), (PCDHA1_Rat, PCDHA1_Souris));
+    t = Tree("(((PCDHA1_Humain, PCDHA1_Bonobo), OR2J3_Humain), (PCDHA1_Rat, PCDHA1_Souris));")
+    print(t)
 
     treesFromFile = readTrees("arbres.nw")
 
