@@ -1,4 +1,5 @@
 # coding=utf-8
+from __future__ import division
 from ete3 import Tree
 import numpy
 
@@ -18,52 +19,22 @@ def readTrees(filename):
 def robinsonFould(tree1, tree2):
     # Initialisation
     distance = 0
-    childrenNum = min(len(tree1), len(tree2))
-    distanceMax = 2*(childrenNum - 3)
 
-    # On deracine les arbres
-    t1 = tree1
-    t2 = tree2
-    t1.unroot()
-    t2.unroot()
+    bpts1 = bipartitions(tree1)
+    bpts2 = bipartitions(tree2)
 
-    children1 = t1.children
-    children2 = t2.children
+    for bpt1 in bpts1:
+        gotMatch = False
 
-    # Comparaisons de toutes les bipartitions
-    # On assume que de la "racine" il y aura toujours 3 enfants
-    # Car les arbres déracinés sont obtenus d'arbres binaires
-    # Par contre, pour être prudent, seulement le nombre minimal
-    # De branches à partir de la "racine" va dicter combien de
-    # Bipartitions nous allons faire
-    branchNum = min(len(children1), len(children2))
-    for i in range(0, branchNum):
-        rightElement1 = children1[i].get_leaves()
-        rightElement2 = children2[i].get_leaves()
+        for bpt2 in bpts2:
 
-        leftElementsArray1 = []
-        for elem in children1:
-            leftElementsArray1 += elem
-        del leftElementsArray1[i]
-        leftElement1 = []
-        for elem in leftElementsArray1:
-            leftElement1 = leftElement1 + elem.get_leaves()
+            if bpt1.compare(bpt2):
+                gotMatch = True
 
-        leftElementsArray2 = []
-        for elem in children2:
-            leftElementsArray2 += elem
-        del leftElementsArray2[i]
-        leftElement2 = []
-        for elem in leftElementsArray2:
-            leftElement2 = leftElement2 + elem.get_leaves()
+        if not gotMatch:
+            distance += 2
 
-        # Les bipartitions pour la seq0 ne marchent pas (voir debugger ici)
-        # De plus, on ne doit pas prendre en compte les bipartitions triviales
-        bipartition1 = Bipartition(rightElement1, leftElement1)
-        bipartition2 = Bipartition(rightElement2, leftElement2)
-        distance += bipartition1.compare(bipartition2)
-    print(distance)
-    return distance/distanceMax
+    return distance
 
 class Bipartition:
     def __init__(self, right, left):
@@ -76,23 +47,83 @@ class Bipartition:
     def getLeft(self):
         return self.left
 
-    def compare(self, bipartition2):
-        result = 0
-        if not arrayCompare(self.right, bipartition2.getRight()):
-            result += 1
-        if not arrayCompare(self.left, bipartition2.getLeft()):
-            result += 1
-        return result
+    def compare(self, bpt2):
+        if not ((arraysCompare(self.right, bpt2.getRight()) and arraysCompare(self.left, bpt2.getLeft())) \
+                or (arraysCompare(self.left, bpt2.getRight()) and arraysCompare(self.right, bpt2.getLeft()))):
+            return False
+        return True
 
-# Returns True if arrays contain the same elements and have the same length
-# Returns False otherwise
-def arrayCompare(array1, array2):
+    def printBipartition(self):
+        print (", ".join(self.left) + " | " + ", ".join(self.right))
+
+def arraysCompare(array1, array2):
     if len(array1) != len(array2):
         return False
-    for element in array1:
-        if not (element in array2):
+    for elem in array1:
+        if not elem in array2:
             return False
     return True
+
+def bipartitions(tree):
+    result = []
+    leafs = tree.get_leaf_names()
+    isParentRoot = False
+
+    for node in tree.iter_descendants():
+        if not node.is_leaf():
+            partition1 = node.get_leaf_names()
+            partition2 = set(leafs) - set(partition1)
+
+            if len(partition1) > 1 and len(partition2) > 1:
+                if node.up.is_root():
+                    if not isParentRoot:
+                        isParentRoot = True
+                        result.append(Bipartition(partition1, partition2))
+                else:
+                    result.append(Bipartition(partition1, partition2))
+
+    result = getRidOfDuplicates(result)
+    print ("Bipartitons trouvees:")
+    for bpt in result:
+        bpt.printBipartition()
+
+    return result
+
+def getRidOfDuplicates(bpts):
+    result = []
+    for bpt in bpts:
+        if len(result) == 0:
+            result.append(bpt)
+        else:
+            if not bipartitionArrayContains(result, bpt):
+                result.append(bpt)
+    return result
+
+def bipartitionArrayContains(array, element):
+    for bpt in array:
+        if bpt.compare(element):
+            return True
+    return False
+
+def calculateRFMatrix(trees):
+    length = len(trees)
+    matrix = []
+    for i in range(0, length):
+        line = []
+        for j in range(0, length):
+            if i != j:
+                print ("-----------------------------RF-------------------------")
+                print ("comparaison entre abres :", (i, j))
+                print (trees[i])
+                print (trees[j])
+                res = robinsonFould(trees[i], trees[j])
+                print ("result = ", res)
+                print ("-----------------------------RF-------------------------")
+                line.append(res)
+            else:
+                line.append(" ")
+        matrix.append(line)
+    return matrix
 
 def readSequences(filename):
     file = []
@@ -245,7 +276,7 @@ def calculateNJMatrix(seqList, distanceMatrix):
             if i!= j:
                 temp = (n-2)* float(distanceMatrix[i][j])
                 sumOne,sumTwo = findSums(i,j,n,distanceMatrix)
-                njMatrix[i][j] = round(temp-sumOne-sumTwo,2)
+                njMatrix[i][j] = temp-sumOne-sumTwo
                 if njMatrix[i][j] < smallest:
                     smallest = njMatrix[i][j]
                     pos = (i,j)
@@ -275,7 +306,7 @@ def calculateDistanceMatrix(blosumMatrix, seqList):
                     p += getDistanceP(blosumMatrix, seqList[i].getNewContent()[k], seqList[j].getNewContent()[k])
                     qi += getDistanceQ(blosumMatrix, seqList[i].getNewContent()[k])
                     qj += getDistanceQ(blosumMatrix, seqList[j].getNewContent()[k])
-                distanceMatrix[i + 1][j + 1] = round(getBlosumScore(p, qi, qj), 2)
+                distanceMatrix[i + 1][j + 1] = getBlosumScore(p, qi, qj)
     return distanceMatrix
 
 
@@ -466,14 +497,17 @@ def main():
     njTreeString = "(" + njTreeStringArray[0] + "," + njTreeStringArray[1] + ");"
     z = Tree(njTreeString)
     print ("+++++++++++++++++++COMPARAISON+++++++++++++++++")
-    print "(((PCDHA1_Humain, PCDHA1_Bonobo), OR2J3_Humain), (PCDHA1_Rat, PCDHA1_Souris));"
-    print njTreeString
+    print ("(((PCDHA1_Humain, PCDHA1_Bonobo), OR2J3_Humain), (PCDHA1_Rat, PCDHA1_Souris));")
+    print (njTreeString)
     print ("Arbre attendu")
-    print(t)
+    print (t)
     print ("Arbre obtenu")
-    print z
+    print (z)
 
     treesFromFile = readTrees("arbres.nw")
+    rfMatrix = calculateRFMatrix(treesFromFile)
+    print ("==============RF MATRIX==============")
+    printMatrix(rfMatrix)
 
     #testScore = robinsonFould(treesFromFile[0], treesFromFile[0])
     #print (testScore)
