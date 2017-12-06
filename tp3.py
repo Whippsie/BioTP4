@@ -429,6 +429,52 @@ def rootTree(t):
             longNode = node
     print ("The farthest node ever is ", longNode.name, "with dist = ", max)
 
+class Path:
+    def __init__(self, start, end, length):
+        self.start = start
+        self.end = end
+        self.length = length
+
+    def get_start(self):
+        return self.start
+
+    def get_end(self):
+        return self.end
+
+    def get_length(self):
+        return self.length
+
+def rootTree(tree):
+    leaves = tree.get_leaves()
+    ## On initialise le résultat à la racine
+    longestPath = Path(tree, tree, 0)
+    for leaf in leaves:
+        start = leaf
+        end = start.get_farthest_leaf()
+        pathLength = start.get_distance(end)
+        if pathLength > longestPath.get_length():
+            longestPath = Path(start, end, pathLength)
+    rightSubtree, leftSubtree = findMidpoint(longestPath)
+    if rightSubtree is leftSubtree:
+        return tree.set_outgroup(rightSubtree)
+    temp = Tree("Root")
+    temp.add_child(rightSubtree)
+    temp.add_child(leftSubtree)
+    return temp
+
+def findMidpoint(path):
+    #initialisation
+    traveledLength = 0
+    rightRoot = path.get_start()
+    leftRoot = path.get_start()
+    while traveledLength < (path.get_length()/2):
+        leftRoot = rightRoot
+        rightRoot = rightRoot.up()
+        traveledLength += numpy.abs(rightRoot.get_length(leftRoot))
+    if traveledLength == (path.get_length()/2):
+        leftRoot = rightRoot
+    return rightRoot, leftRoot
+
 def main():
     # Creates a list of Sequence object with the name and content
     seqList = readSequences("proteines.fa")
