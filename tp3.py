@@ -434,22 +434,22 @@ def printMatrix(matrix):
     for col in matrix:
         print (col)
 
-def rootTree(t):
-    print("unrooted tree ", t)
-    print("")
-    r = t.get_midpoint_outgroup()
-    print("mid point technic = " , r)
-
-    max = 0
-    longNode = None
-    #Get farthest node from every node
-    for node in t.traverse():
-        farthest, dist = node.get_farthest_node()
-        print ("The farthest node from ", node.name, "is ", farthest.name, "with dist = ", dist)
-        if dist>max:
-            max = dist
-            longNode = node
-    print ("The farthest node ever is ", longNode.name, "with dist = ", max)
+# def rootTree(t):
+#     print("unrooted tree ", t)
+#     print("")
+#     r = t.get_midpoint_outgroup()
+#     print("mid point technic = " , r)
+#
+#     max = 0
+#     longNode = None
+#     #Get farthest node from every node
+#     for node in t.traverse():
+#         farthest, dist = node.get_farthest_node()
+#         print ("The farthest node from ", node.name, "is ", farthest.name, "with dist = ", dist)
+#         if dist>max:
+#             max = dist
+#             longNode = node
+#     print ("The farthest node ever is ", longNode.name, "with dist = ", max)
 
 class Path:
     def __init__(self, start, end, length):
@@ -467,32 +467,44 @@ class Path:
         return self.length
 
 def rootTree(tree):
+    print ("On root cet arbre:")
+    print (tree)
     leaves = tree.get_leaves()
     ## On initialise le résultat à la racine
     longestPath = Path(tree, tree, 0)
-    for leaf in leaves:
+    for leaf in tree.iter_leaves():
+        print ("Leaf:", leaf)
+        print ("Leaf.up:", leaf._get_up())
         start = leaf
-        end = start.get_farthest_leaf()
-        pathLength = start.get_distance(end)
+        end, dist = start.get_farthest_node()
+        pathLength = tree.get_distance(start.name, end.name)
         if pathLength > longestPath.get_length():
             longestPath = Path(start, end, pathLength)
-    rightSubtree, leftSubtree = findMidpoint(longestPath)
+    rightSubtree, leftSubtree = findMidpoint(longestPath, tree)
     if rightSubtree is leftSubtree:
         return tree.set_outgroup(rightSubtree)
-    temp = Tree("Root")
+    print (rightSubtree)
+    print (leftSubtree)
+    temp = Tree()
     temp.add_child(rightSubtree)
     temp.add_child(leftSubtree)
     return temp
 
-def findMidpoint(path):
+def findMidpoint(path, tree):
     #initialisation
     traveledLength = 0
     rightRoot = path.get_start()
     leftRoot = path.get_start()
     while traveledLength < (path.get_length()/2):
         leftRoot = rightRoot
-        rightRoot = rightRoot.up()
-        traveledLength += numpy.abs(rightRoot.get_length(leftRoot))
+        if rightRoot.is_root():
+            children = rightRoot.get_children()
+            for child in children:
+                if not child is leftRoot:
+                    rightRoot = child
+        else:
+            rightRoot = rightRoot._get_up()
+        traveledLength += numpy.abs(tree.get_distance(rightRoot, leftRoot))
     if traveledLength == (path.get_length()/2):
         leftRoot = rightRoot
     return rightRoot, leftRoot
@@ -570,7 +582,7 @@ def main():
     #for d, value in dictTree.items():
      #   print(value)
 
-    t =  dictTree['notaroot']
+    t = dictTree['notaroot']
     print(" =========================================")
     print("Arbre NJ obtenu")
     print (t)
@@ -600,9 +612,13 @@ def main():
         nb+=1
         
     #TESTING ROOTING
-    t1 = treesFromFile[0]
-    t1.unroot()
+    #t1 = treesFromFile[0]
+    #t1.unroot()
     #rootTree(t1)
+
+    t = rootTree(t)
+    print ("======Rooted Tree=====")
+    print (t)
 
 """
     testDistanceMatrix = [['~', 'a', 'b', 'c', 'd', 'e'], ['a', 0, 5, 9, 9, 8], ['b', 5, 0, 10, 10, 9],
