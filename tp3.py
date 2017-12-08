@@ -6,6 +6,7 @@ import numpy
 # Pour lire le fichier contenant les arbres
 def readTrees(filename):
     trees = []
+    print("Impression des arbres du fichiers")
     with open(filename, 'r') as f:
         for line in f:
             line = line.strip("\n")
@@ -113,11 +114,11 @@ def calculateRFMatrix(trees):
         for j in range(0, length):
             if i != j:
                 print ("-----------------------------RF-------------------------")
-                print ("comparaison entre abres :", (i, j))
+                print ("Comparaison entre arbres :", (i, j))
                 print (trees[i])
                 print (trees[j])
                 res = robinsonFould(trees[i], trees[j])
-                print ("result = ", res)
+                print ("Result = ", res)
                 print ("-----------------------------RF-------------------------")
                 line.append(res)
             else:
@@ -588,12 +589,16 @@ def main():
     #rfMatrix = calculateRFMatrix(treesFromFile)
     #print ("==============RF MATRIX==============")
     #printMatrix(rfMatrix)
-
-    rf= treesFromFile[0].robinson_foulds(treesFromFile[1])
-    print("rf",rf[0])
-    testScore = robinsonFould(treesFromFile[0], treesFromFile[1])
-    print (testScore)
-
+    nb = 0
+    for tt in treesFromFile:
+        print(" =========================================")
+        print("Comparaison arbre NJ avec arbre ", nb)
+        rf= t.robinson_foulds(tt,unrooted_trees=True)
+        print("RF : ",rf[0])
+        testScore = robinsonFould(t, tt)
+        print ("Test score:" + str(testScore))
+        nb+=1
+        
     #TESTING ROOTING
     t1 = treesFromFile[0]
     t1.unroot()
