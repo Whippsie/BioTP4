@@ -6,7 +6,6 @@ import numpy
 # Pour lire le fichier contenant les arbres
 def readTrees(filename):
     trees = []
-    print("Impression des arbres du fichiers")
     with open(filename, 'r') as f:
         for line in f:
             line = line.strip("\n")
@@ -114,11 +113,11 @@ def calculateRFMatrix(trees):
         for j in range(0, length):
             if i != j:
                 print ("-----------------------------RF-------------------------")
-                print ("Comparaison entre arbres :", (i, j))
+                print ("comparaison entre abres :", (i, j))
                 print (trees[i])
                 print (trees[j])
                 res = robinsonFould(trees[i], trees[j])
-                print ("Result = ", res)
+                print ("result = ", res)
                 print ("-----------------------------RF-------------------------")
                 line.append(res)
             else:
@@ -466,12 +465,29 @@ class Path:
     def get_length(self):
         return self.length
 
+def distances(tree):
+    file = open("Distances.txt", "w")
+    for leaf in tree.traverse():
+        if not leaf.is_root():
+            end, dist = leaf.get_farthest_node()
+            dist_parent = tree.get_distance(leaf.name, leaf._get_up().name)
+            file.write("==========Node distance==========\n")
+            file.write("Node: " + leaf.name + "\n")
+            file.write("Distance from parent: " + str(dist_parent) + "\n")
+            file.write("Farthest node: " + end.name + "\n")
+            file.write("Distance from farthest node: " + str(dist) + "\n")
+            file.write("\n")
+    file.close()
+
+
 def rootTree(tree):
     print ("On root cet arbre:")
     print (tree)
     leaves = tree.get_leaves()
     ## On initialise le résultat à la racine
     longestPath = Path(tree, tree, 0)
+    print ("ce qui m'interesse")
+    print (tree.get_distance("PCDHA1_Souris", "OR2J3_Humain"))
     for leaf in tree.iter_leaves():
         print ("Leaf:", leaf)
         print ("Leaf.up:", leaf._get_up())
@@ -480,11 +496,16 @@ def rootTree(tree):
         pathLength = tree.get_distance(start.name, end.name)
         if pathLength > longestPath.get_length():
             longestPath = Path(start, end, pathLength)
+            print ("LONGEST PATH:")
+            print (longestPath.get_start().name)
+            print (longestPath.get_end().name)
+            print (longestPath.get_length())
     rightSubtree, leftSubtree = findMidpoint(longestPath, tree)
     if rightSubtree is leftSubtree:
         return tree.set_outgroup(rightSubtree)
     print (rightSubtree)
     print (leftSubtree)
+
     temp = Tree()
     temp.add_child(rightSubtree)
     temp.add_child(leftSubtree)
@@ -492,6 +513,7 @@ def rootTree(tree):
 
 def findMidpoint(path, tree):
     #initialisation
+    print ("On est dans midpoint")
     traveledLength = 0
     rightRoot = path.get_start()
     leftRoot = path.get_start()
@@ -505,8 +527,10 @@ def findMidpoint(path, tree):
         else:
             rightRoot = rightRoot._get_up()
         traveledLength += numpy.abs(tree.get_distance(rightRoot, leftRoot))
+    print ("traveled length", traveledLength)
     if traveledLength == (path.get_length()/2):
         leftRoot = rightRoot
+    print ("On sort de midpoint")
     return rightRoot, leftRoot
 
 def main():
@@ -601,24 +625,22 @@ def main():
     #rfMatrix = calculateRFMatrix(treesFromFile)
     #print ("==============RF MATRIX==============")
     #printMatrix(rfMatrix)
-    nb = 0
-    for tt in treesFromFile:
-        print(" =========================================")
-        print("Comparaison arbre NJ avec arbre ", nb)
-        rf= t.robinson_foulds(tt,unrooted_trees=True)
-        print("RF : ",rf[0])
-        testScore = robinsonFould(t, tt)
-        print ("Test score:" + str(testScore))
-        nb+=1
-        
+
+    rf= treesFromFile[0].robinson_foulds(treesFromFile[1])
+    print("rf",rf[0])
+    testScore = robinsonFould(treesFromFile[0], treesFromFile[1])
+    print (testScore)
+
     #TESTING ROOTING
     #t1 = treesFromFile[0]
     #t1.unroot()
     #rootTree(t1)
 
-    t = rootTree(t)
-    print ("======Rooted Tree=====")
-    print (t)
+    #t = rootTree(t)
+    #print ("======Rooted Tree=====")
+    #print (t)
+
+    distances(t)
 
 """
     testDistanceMatrix = [['~', 'a', 'b', 'c', 'd', 'e'], ['a', 0, 5, 9, 9, 8], ['b', 5, 0, 10, 10, 9],
