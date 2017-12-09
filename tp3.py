@@ -6,6 +6,7 @@ import numpy
 # Pour lire le fichier contenant les arbres
 def readTrees(filename):
     trees = []
+    print("Affichage des arbres du fichier arbres.nw")
     with open(filename, 'r') as f:
         for line in f:
             line = line.strip("\n")
@@ -198,8 +199,6 @@ def updateNJTree(i,j,n,distanceMatrix,seqList,dictPos,dictTree):
             #On ajoute la dernière distance
             if m!=i and m!=j:
                 dictTree[distanceMatrix[0][m]].add_features(dist=distanceMatrix[i][m]-distIToNewNode)
-    #print("distance between: a et u ",distIToNewNode)
-    #print("distance between: b et u ",distJToNewNode)
 
 
     stringList=[]
@@ -257,20 +256,6 @@ def makeNewDistanceMatrix(n, seqStringList, distanceMatrix,i,j,dictPos,dictTree)
                 rowScore.append(seqStringList[row - 1])
             elif row !=i and column!= i and row!= column:
                 rowScore.append(distanceMatrix[dictPos[seqStringList[row - 1]][0]][dictPos[seqStringList[column - 1]][0]])
-                """if row<i and column<i:
-                    # On ne touche pas à l'indice
-                    rowScore.append(distanceMatrix[row][column])
-                else:
-
-                    if row<i:
-                        rowScore.append(distanceMatrix[row][column + 1])
-                    elif column <i:
-                        rowScore.append(distanceMatrix[row+1][column])
-                    else:# On réduit l'indice de 1
-                        if j!= i+1:
-                            rowScore.append(distanceMatrix[row][column])
-                        else:
-                            rowScore.append(distanceMatrix[row+1][column+1])"""
             else:
                 rowScore.append(0)
         newMatrix.append(rowScore)
@@ -423,8 +408,6 @@ def findLine(matrix, char):
 
 
 def printSequences(seqList):
-    # for s in seqList:
-    # print(s.getOldContent())
     for s in seqList:
         print (s.getNewContent())
 
@@ -432,23 +415,6 @@ def printSequences(seqList):
 def printMatrix(matrix):
     for col in matrix:
         print (col)
-
-# def rootTree(t):
-#     print("unrooted tree ", t)
-#     print("")
-#     r = t.get_midpoint_outgroup()
-#     print("mid point technic = " , r)
-#
-#     max = 0
-#     longNode = None
-#     #Get farthest node from every node
-#     for node in t.traverse():
-#         farthest, dist = node.get_farthest_node()
-#         print ("The farthest node from ", node.name, "is ", farthest.name, "with dist = ", dist)
-#         if dist>max:
-#             max = dist
-#             longNode = node
-#     print ("The farthest node ever is ", longNode.name, "with dist = ", max)
 
 class Path:
     def __init__(self, start, end, length):
@@ -594,144 +560,31 @@ def main():
 
     #Il nous reste un seul match à faire, on aura toujours 3 colonnes
     t = Tree()
-    #dictTree[distanceMatrix[i][0]].add_features(dist=0)
-    #dictTree[distanceMatrix[0][j]].add_features(dist=0)
     t.add_child(dictTree[distanceMatrix[0][2]])
     t.add_child(dictTree[distanceMatrix[0][1]])
     t.add_features(name='notaroot')
     t.add_features(dist=0)
     dictTree['notaroot'] = t
 
-    #print(dictTree)
-    #for d, value in dictTree.items():
-     #   print(value)
 
     t = dictTree['notaroot']
     print(" =========================================")
     print("Arbre NJ obtenu")
     print (t)
     print(" =========================================")
-    #njTreeString = "(" + njTreeStringArray[0] + "," + njTreeStringArray[1] + ");"
-    #z = Tree(njTreeString)
-    #print ("+++++++++++++++++++COMPARAISON+++++++++++++++++")
-    #print ("(((PCDHA1_Humain, PCDHA1_Bonobo), OR2J3_Humain), (PCDHA1_Rat, PCDHA1_Souris));")
-    #print (njTreeString)
-    #print ("Arbre attendu")
-    #print (t)
-    #print ("Arbre obtenu")
-    #print (z)
 
     treesFromFile = readTrees("arbres.nw")
+    # Enlever les commentaires pour voir toutes les comparaisons RF des arbres du fichier
     #rfMatrix = calculateRFMatrix(treesFromFile)
     #print ("==============RF MATRIX==============")
     #printMatrix(rfMatrix)
-
-    rf= treesFromFile[0].robinson_foulds(treesFromFile[1])
-    print("rf",rf[0])
-    testScore = robinsonFould(treesFromFile[0], treesFromFile[1])
-    print (testScore)
-
-    #TESTING ROOTING
-    #t1 = treesFromFile[0]
-    #t1.unroot()
-    #rootTree(t1)
-
-    #t = rootTree(t)
-    #print ("======Rooted Tree=====")
-    #print (t)
-
+    cpt =0
+    for i in treesFromFile:
+        print("Comparaison RF entre Arbre NJ et Arbre " , cpt, " du fichier.")
+        print(robinsonFould(i, t))
+        cpt+=1
     distances(t)
 
-"""
-    testDistanceMatrix = [['~', 'a', 'b', 'c', 'd', 'e'], ['a', 0, 5, 9, 9, 8], ['b', 5, 0, 10, 10, 9],
-                          ['c', 9, 10, 0, 8, 7], ['d', 9, 10, 8, 0, 3], ['e', 8, 9, 7, 3, 0]]
-    a = Sequence('a',"","")
-    b = Sequence('b', "", "")
-    c = Sequence('c', "", "")
-    d = Sequence('d', "", "")
-    e = Sequence('e', "", "")
-    seqList = [a,b,c,d,e]
-
-    dictPos = {}
-    dictTree = {}
-
-    njMatrix, posSmallest,dictPos,dictTree = calculateNJMatrix(seqList, testDistanceMatrix,dictPos,dictTree)
-    printMatrix(njMatrix)
-    temp = []
-    # newSeqList est une liste de String, on doit donc créer les objets correspondants
-
-    seqList, newMatrix, njTreeStringArray, dictPos, dictTree = updateNJTree(posSmallest[0], posSmallest[1],
-                                                                               len(seqList), testDistanceMatrix, seqList,
-                                                                               dictPos, dictTree)
-
-    printMatrix(newMatrix)
-    temp = []
-    # newSeqList est une liste de String, on doit donc créer les objets correspondants
-    for s in seqList:
-        temp.append(Sequence(s, "", ""))
-
-    # On recalcule la matrice NJ à partir de la nouvelle matrice des distances
-    njMatrix, posSmallest, dictPos, dictTree = calculateNJMatrix(temp, newMatrix, dictPos, dictTree)
-    print(" =========================================")
-    # Idem à plus haut
-    seqList, newMatrix, njTreeStringArray, dictPos, dictTree = updateNJTree(posSmallest[0], posSmallest[1],
-                                                                               len(seqList), newMatrix, temp,
-                                                                               dictPos, dictTree)
-    print(" =========================================")
-    print(" =========================================")
-    print("Matrice des distances après itérations")
-    printMatrix(newMatrix)
-    temp = []
-    # newSeqList est une liste de String, on doit donc créer les objets correspondants
-    for s in seqList:
-        temp.append(Sequence(s, "", ""))
-
-    # On recalcule la matrice NJ à partir de la nouvelle matrice des distances
-    njMatrix, posSmallest, dictPos, dictTree = calculateNJMatrix(temp, newMatrix, dictPos, dictTree)
-    print(" =========================================")
-    # Idem à plus haut
-    seqList, newMatrix, njTreeStringArray, dictPos, dictTree = updateNJTree(posSmallest[0], posSmallest[1],
-                                                                               len(seqList), newMatrix, temp,
-                                                                               dictPos, dictTree)
-    print(" =========================================")
-    print(" =========================================")
-    print("Matrice des distances après itérations")
-    printMatrix(newMatrix)
-
-    t = Tree()
-    i=1
-    j=2
-    n=2 #Reste toujours 2 éléments
-    dictTree[newMatrix[i][0]].add_features(dist=0)
-    dictTree[newMatrix[0][j]].add_features(dist=0)
-    t.add_child(dictTree[newMatrix[0][2]])
-    t.add_child(dictTree[newMatrix[0][1]])
-    t.add_features(name='notaroot')
-    t.add_features(dist=0)
-    dictTree['notaroot'] = t
-"""
 if __name__ == "__main__":
     main()
 
-    """
-        # Test
-        print(" ===================TESTING======================")
-        testDistanceMatrix = [['~','a','b','c','d','e'],['a',0,5,9,9,8],['b',5,0,10,10,9],['c',9,10,0,8,7],['d',9,10,8,0,3],['e',8,9,7,3,0]]
-        #testNumpy(testList,2)
-        print("DISTANCE INITIALE")
-        printMatrix(testDistanceMatrix)
-        a = Sequence('a',"","")
-        b = Sequence('b', "", "")
-        c = Sequence('c', "", "")
-        d = Sequence('d', "", "")
-        e = Sequence('e', "", "")
-        seqList = [a,b,c,d,e]
-        njMatrix, posSmallest = calculateNJMatrix(seqList, testDistanceMatrix)
-        print("")
-        #print("DISTANCE MODIFIEE")
-        #printMatrix(njMatrix)
-
-        print("Smallest is: ",posSmallest[0],posSmallest[1])
-        print("")
-
-    """
