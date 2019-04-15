@@ -1,0 +1,48 @@
+==========Node distance==========
+Node: PCDHA1_Bonobo
+Distance from parent: 0.009811170758017573
+Farthest node: OR2J3_Humain
+Distance from farthest node: 0.911249887134931
+
+==========Node distance==========
+Node: PCDHA1_Humain-OR2J3_Humain-PCDHA1_Rat-PCDHA1_Souris
+Distance from parent: 0.0
+Farthest node: OR2J3_Humain
+Distance from farthest node: 0.9014387163769135
+
+==========Node distance==========
+Node: PCDHA1_Humain
+Distance from parent: 0.0116841563447862
+Farthest node: OR2J3_Humain
+Distance from farthest node: 0.9131228727216998
+
+==========Node distance==========
+Node: OR2J3_Humain-PCDHA1_Rat-PCDHA1_Souris
+Distance from parent: 0.06962886077242142
+Farthest node: OR2J3_Humain
+Distance from farthest node: 0.831809855604492
+
+==========Node distance==========
+Node: OR2J3_Humain
+Distance from parent: 0.831809855604492
+Farthest node: PCDHA1_Rat
+Distance from farthest node: 0.9338152278243594
+
+==========Node distance==========
+Node: PCDHA1_Rat-PCDHA1_Souris
+Distance from parent: 0.07454707954124407
+Farthest node: OR2J3_Humain
+Distance from farthest node: 0.9063569351457361
+
+==========Node distance==========
+Node: PCDHA1_Rat
+Distance from parent: 0.02745829267862328
+Farthest node: OR2J3_Humain
+Distance from farthest node: 0.9338152278243594
+
+==========Node distance==========
+Node: PCDHA1_Souris
+Distance from parent: 0.02631529222703714
+Farthest node: OR2J3_Humain
+Distance from farthest node: 0.9326722273727732
+
